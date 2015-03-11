@@ -30,6 +30,7 @@
 #include <set>
 #include "base/CCRef.h"
 #include "renderer/CCVertexAttribute.h"
+#include "PAL/interfaces/CCGraphicsInterface.h"
 
 NS_CC_BEGIN
 
@@ -155,7 +156,7 @@ protected:
 
     bool _interleaved;
     bool _dirty;
-    int _vao;
+    NS_PRIVATE::handle _vao;
     
     Primitive _drawingPrimitive;
 

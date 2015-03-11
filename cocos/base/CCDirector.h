@@ -37,6 +37,12 @@ THE SOFTWARE.
 #include "math/CCMath.h"
 #include "platform/CCGL.h"
 #include "platform/CCGLView.h"
+#include "PAL/CCPALMacros.h"
+
+NS_PRIVATE_BEGIN
+class PALManager;
+class GraphicsInterface;
+NS_PRIVATE_END
 
 NS_CC_BEGIN
 
@@ -58,7 +64,6 @@ class EventListenerCustom;
 class TextureCache;
 class Renderer;
 class Camera;
-
 class Console;
 
 /**
@@ -129,7 +134,7 @@ public:
      */
     virtual ~Director();
     virtual bool init();
-
+    
     // attribute
 
     /** Get current running Scene. Director can only run one Scene at a time */
@@ -399,6 +404,9 @@ public:
     const Mat4& getMatrix(MATRIX_STACK_TYPE type);
     void resetMatrixStack();
 
+    NS_PRIVATE::GraphicsInterface* getGraphicsInterface() const;
+    void selectGraphicsAPI(const char* apis[], const char* title);
+    
 protected:
     void reset();
     
@@ -443,7 +451,17 @@ protected:
      */
     EventDispatcher* _eventDispatcher;
     EventCustom *_eventProjectionChanged, *_eventAfterDraw, *_eventAfterVisit, *_eventAfterUpdate;
-        
+    
+    /** Graphics API Manager
+     @since v4.0
+     */
+    NS_PRIVATE::PALManager* _PALManager;
+    
+    /** Selected Graphics Interface
+     @since v4.0
+     */
+    NS_PRIVATE::GraphicsInterface* _graphicsInterface;
+    
     /* delta time since last tick to main loop */
 	float _deltaTime;
     

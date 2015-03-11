@@ -60,6 +60,7 @@ THE SOFTWARE.
 #include "base/CCAsyncTaskPool.h"
 #include "platform/CCApplication.h"
 //#include "platform/CCGLViewImpl.h"
+#include "PAL/CCPAL.h"
 
 #if CC_ENABLE_SCRIPT_BINDING
 #include "CCScriptSupport.h"
@@ -79,6 +80,7 @@ THE SOFTWARE.
 #endif // CC_DIRECTOR_STATS_POSITION
 
 using namespace std;
+USING_NS_PRIVATE;
 
 NS_CC_BEGIN
 // FIXME: it should be a Director ivar. Move it there once support for multiple directors is added
@@ -108,11 +110,16 @@ Director* Director::getInstance()
 
 Director::Director()
 : _isStatusLabelUpdated(true)
+, _graphicsInterface(nullptr)
 {
 }
 
 bool Director::init(void)
 {
+    // this needs to come first so that anyone logging doesn't crash
+    // CCLOG calls Director::getInstance()->getConsole()->log(...)
+    _console = new (std::nothrow) Console;
+
     setDefaultValues();
 
     // scenes
@@ -162,14 +169,18 @@ bool Director::init(void)
     _eventProjectionChanged = new (std::nothrow) EventCustom(EVENT_PROJECTION_CHANGED);
     _eventProjectionChanged->setUserData(this);
 
-
+    _PALManager = PALManager::create();
+    _PALManager->retain();
+    
+    const char* apis[] = {"opengles2.0", nullptr};
+    _graphicsInterface = _PALManager->createObject<GraphicsInterface>(apis);
+    _graphicsInterface->retain();
+    
     //init TextureCache
     initTextureCache();
     initMatrixStack();
 
     _renderer = new (std::nothrow) Renderer;
-
-    _console = new (std::nothrow) Console;
 
     return true;
 }
@@ -198,6 +209,8 @@ Director::~Director(void)
 
 
     CC_SAFE_RELEASE(_eventDispatcher);
+    CC_SAFE_RELEASE(_PALManager);
+    CC_SAFE_RELEASE(_graphicsInterface);
     
     // delete _lastUpdate
     CC_SAFE_DELETE(_lastUpdate);
@@ -437,6 +450,20 @@ void Director::setViewport()
 void Director::setNextDeltaTimeZero(bool nextDeltaTimeZero)
 {
     _nextDeltaTimeZero = nextDeltaTimeZero;
+}
+
+// MARK: graphics API
+NS_PRIVATE::GraphicsInterface* Director::getGraphicsInterface() const
+{
+    CCASSERT(_graphicsInterface != nullptr, "Graphics API has not been selected");
+    return _graphicsInterface;
+}
+
+void Director::selectGraphicsAPI(const char* apis[], const char* title)
+{
+    CC_SAFE_RELEASE_NULL(_graphicsInterface);
+    _graphicsInterface = _PALManager->createObject<GraphicsInterface>(apis);
+    CC_SAFE_RETAIN(_graphicsInterface);
 }
 
 //
